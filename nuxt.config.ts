@@ -6,7 +6,7 @@ export default defineNuxtConfig({
     '@nuxtjs/tailwindcss',
     'nuxt-icon',
     './modules/sheet/sheetmodule',
-    '@nuxt/content',
+    '@nuxt/content'
   ],
   // postcss: {
   //   plugins: {
@@ -14,4 +14,18 @@ export default defineNuxtConfig({
   //     autoprefixer: {},
   //   },
   // },
+  build:{
+    transpile:[
+      // '@pdftron/pdfnet-node'
+    ]
+  },
+  runtimeConfig: {
+      // Private config that is only available on the server
+      apiSecret: '',
+      appUrl:'',
+      // Config within public will be also exposed to the client
+      public: {
+          apiBase: '/api'
+      }
+  },
 })

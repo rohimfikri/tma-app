@@ -1,11 +1,12 @@
 <template>
     <div class="px-4 sm:px-6 lg:px-8 py-5">
-        <label for="fileDropdown">Select File {{ fileSelect }}</label><br />
-        <button id="fileDropdown" data-dropdown-toggle="fileSearch" data-dropdown-placement="right"
+        <label for="fileDropdown">Select File</label><br />
+        <button v-show="!onLoad" id="fileDropdown" ref="btnFile" data-dropdown-toggle="fileSearch" data-dropdown-placement="right"
             :class="(selectedFile.path==null)?'bg-neutral-400':'bg-neutral-700'"
             class="text-white hover:bg-neutral-800 focus:ring-4 focus:outline-none focus:ring-neutral-300 font-medium rounded-lg text-sm px-3 py-2 text-center inline-flex items-center dark:bg-neutral-600 dark:hover:bg-neutral-700 dark:focus:ring-neutral-800"
             type="button">{{ selectedFile.name }} <Icon class="ml-3" name="ic:outline-keyboard-double-arrow-right" />
         </button>
+        <div v-show="onLoad">ON LOADING...</div>
 
         <!-- Dropdown menu -->
         <div id="fileSearch" class="z-10 hidden bg-white rounded-lg shadow w-60 dark:bg-gray-700">
@@ -22,7 +23,7 @@
                     </div>
                     <input type="text" id="input-group-search"
                         class="block w-full p-2 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                        placeholder="Search user">
+                        placeholder="Search file" v-model="srcFile">
                 </div>
             </div>
             <ul class="h-48 px-3 pb-3 overflow-y-auto text-sm text-gray-700 dark:text-gray-200"
@@ -78,12 +79,12 @@
                                         <div class="flex flex-row ml-10 gap-2">
                                             <button :data-tooltip-target="`tooltipsend-${person['1']}`"
                                                 data-send-style="light" data-tooltip-placement="right"
-                                                class=" bg-cyan-600 text-white py-0 px-1 rounded">
+                                                class=" bg-cyan-600 text-white py-0 px-1 rounded" @click="sendSlip(person)">
                                                 <Icon name="cib:minutemailer" />
                                             </button>
                                             <div :id="`tooltipsend-${person['1']}`" role="tooltip"
                                                 class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 tooltip">
-                                                Kirim Slip Gaji ke <span class="text-cyan-600">{{ person['35'] }}</span>
+                                                Kirim Slip Gaji ke <span class="text-cyan-600">{{ person['#REF!_19'] }}</span>
                                                 <div class="tooltip-arrow" data-popper-arrow></div>
                                             </div>
 
@@ -94,7 +95,7 @@
                                             </button>
                                             <div :id="`tooltipdown-${person['1']}`" role="tooltip"
                                                 class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 tooltip">
-                                                Unduh Slip Gaji <span class="text-red-700">{{ person['2'] }}</span>
+                                                Unduh Slip Gaji <span class="text-red-700">{{ person['3'] }}</span>
                                                 <div class="tooltip-arrow" data-popper-arrow></div>
                                             </div>
 
@@ -105,16 +106,16 @@
                                             </button>
                                             <div :id="`tooltipview-${person['1']}`" role="tooltip"
                                                 class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-lg shadow-sm opacity-0 tooltip">
-                                                Lihet Slip Gaji <span class="text-amber-600">{{ person['2'] }}</span>
+                                                Lihet Slip Gaji <span class="text-amber-600">{{ person['3'] }}</span>
                                                 <div class="tooltip-arrow" data-popper-arrow></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="whitespace-nowrap text-center px-3 py-4 text-sm text-gray-500"
                                         v-for="(head, key) in row_header" v-bind:key="`${key}-${person['1']}`"
-                                        :class="[(key == '_2' || key == '_35' || key == '_31') && 'font-bold']"
+                                        :class="[(key == '~2' || key == '~#REF!_19' || key == '~3') && 'font-bold']"
                                         @click="rowClicked(person['1'])">
-                                        {{ person[key.replace('_', '')] }}
+                                        {{ person[key.replace('~', '')] }}
                                     </td>
                                 </tr>
                             </tbody>
@@ -128,87 +129,87 @@
 
 <script setup>
 import { initTooltips, initDropdowns } from 'flowbite'
+const { $mail } = useNuxtApp()
+const onLoad = ref(false)
 
 const selectedFile = ref({
     name : "-- no file selected --",
     path: null
 })
-const fileSelect = ref(null)
+const fileSelect = ref(null);
+const srcFile = ref("");
+const btnFile = ref(null)
 
+const { data:fdata } = await useFetch('/api/payroll/list-excel');
+// console.log(fdata.value);
 const files = computed(() => {
-    return [
-        {
-            name : "File A",
-            path: 'a'
-        },
-        {
-            name : "File B",
-            path: 'b'
+    let tmp = [];
+    fdata.value.forEach((v)=>{
+        if(v.includes(srcFile.value) || srcFile.value==""){
+            tmp.push({
+                name: v.replace('.xlsx','').replace('payroll-',''),
+                path: v.replace('.xlsx','')
+            })
         }
-    ]
+    });
+    return tmp;
 })
 
-const { data } = await useAsyncData('payroll', () => queryContent('/payroll/jan').findOne());
+// const { data } = await useAsyncData('payroll', () => queryContent('/payroll-02-2023').findOne());
+let _data = [];
+// if (data.value.body !== undefined && data.value.body[0] !== undefined) {
+//     _data =  data.value.body[0].data.filter((v,k)=>k>0 && v["#REF!_19"]!==undefined);
+// }
+const people = ref(_data);
 const rowTbl = ref({});
 const fileRadio = ref({});
 const row_header = {
-    "_1": "NO",
-    "_2": "NAMA",
-    "_35": "Email",
-    "_31": "NIK",
-    "_30": "NPWP",
-    "_32": "Bank",
-    "_33": "Norek",
-    "_34": "Fungsi",
-    "_3": "PERIODE PYR",
-    "_4": "Extra Meal All",
-    "_5": "Extra Trans All",
-    "_6": "Lembur",
-    "_7": "Onsite",
-    "_8": "Biztrip",
-    "_9": "KODE PTKP",
-    "_10": "GAPOK & Tj TETAP",
-    "_11": "Tunj Proyek",
-    "_12": "Extra Meal All",
-    "_13": "Extra Transport All",
-    "_14": "Lembur",
-    "_15": "Tunj On Site",
-    "_16": "Biztrip",
-    "_17": "Tunj Sarana",
-    "_18": "THR",
-    "_19": "Bonus Thnan",
-    "_20": "Bonus Lain",
-    "_21": "GAJI KOTOR",
-    "_22": "Pinjaman",
-    "_23": "PPH 21",
-    "_24": "Gaji Dimuka",
-    "_25": "TOT POTONGAN",
-    "_26": "THP",
-    "_27": "Total Premi Naker",
-    "_28": "Total Premi Kesehatan",
-    "_29": "Benefit Lain",
-    // "__EMPTY_6": "GP",
-    // "__EMPTY_7": "TP",
-    // "__EMPTY_8": "PI",
-    // "__EMPTY_9": "BON",
-    // "__EMPTY_10": "BL",
-    // "__EMPTY_11": "GM",
-    // "__EMPTY_12": "B"
+    "~1": "NO",
+    "~2": "NIP",
+    "~3": "NAMA",
+    "~#REF!_19": "Email",
+    "~__EMPTY_5": "Fungsi",
+    "~#REF!_16": "NIK",
+    "~#REF!_15": "NPWP",
+    "~#REF!_17": "Bank",
+    "~#REF!_18": "Norek",
+    "~4": "PERIODE PYR",
+    "~#REF!": "Lembur",
+    "~#REF!_1": "Status Pajak",
+    "~#REF!_2": "Bagian",
+    "~#REF!_3": "GAPOK & Tj TETAP",
+    "~#REF!_4": "Tunj Proyek",
+    "~#REF!_5": "Lembur",
+    "~#REF!_6": "Tunj On Site",
+    "~__EMPTY": "Tunj Perjalanan Dinas",
+    "~__EMPTY_1": "Tunjangan Sarana",
+    "~#REF!_7": "THR",
+    "~#REF!_8": "Bonus",
+    "~#REF!_9": "BPJS Keluarga",
+    "~__EMPTY_2": "Lainnya",
+    "~#REF!_10": "GAJI KOTOR",
+    "~#REF!_11": "Pinjaman",
+    "~#REF!_12": "PPH 21",
+    "~#REF!_13": "Gaji dimuka BPJS",
+    "~__EMPTY_3": "Gaji dibayar dimuka",
+    "~#REF!_14": "TOT POTONGAN",
+    "~__EMPTY_4": "THP",
 };
 
-const people = computed(() => {
-    if (data.value.body[1] !== undefined) {
-        // data.value.body[1].data.shift();
-        // console.log(data.value.body[1].data)
-        return data.value.body[1].data.filter((v,k)=>k>0);
-    } else {
-        return []
-    }
-})
+// const people = computed(() => {
+//     console.log(rawdata.value.body)
+//     if (rawdata.value.body !== undefined && rawdata.value.body[0] !== undefined) {
+//         // rawdata.value.body[1].rawdata.shift();
+//         // console.log(rawdata.value.body[1].rawdata)
+//         return rawdata.value.body[0].data.filter((v,k)=>k>0);
+//     } else {
+//         return []
+//     }
+// })
 
 const selectedPeople = ref([])
 const checked = ref(false)
-const indeterminate = computed(() => selectedPeople.value.length > 0 && selectedPeople.value.length < people.length)
+const indeterminate = computed(() => selectedPeople.value.length > 0 && selectedPeople.value.length < people.value.length)
 
 const rowClicked = (row_id) => {
     // console.log(row_id)
@@ -218,18 +219,46 @@ const rowClicked = (row_id) => {
     rowTbl.value[row_id].dispatchEvent(new Event('change'))
 }
 
-const changeFile = (idx) => {
+const changeFile = async (idx) => {
     fileRadio.value[idx].checked = !fileRadio.value[idx].checked;
     fileRadio.value[idx].dispatchEvent(new Event('change'))
+    // console.log(files.value[fileSelect.value]);
+    if(files.value[fileSelect.value]!==undefined){
+        // console.log(btnFile.value)
+        onLoad.value = true;
+        btnFile.value.dispatchEvent(new Event('click'))
+        selectedFile.value = files.value[fileSelect.value];
+        const { data } = await useAsyncData('payroll', () => queryContent('/'+files.value[fileSelect.value].path).findOne());
+        let _data = [];
+        if (data.value.body !== undefined && data.value.body[0] !== undefined) {
+            _data =  data.value.body[0].data.filter((v,k)=>k>0 && v["#REF!_19"]!==undefined);
+        }
+        people.value = _data;
+        onLoad.value = false;
+    }
+}
+
+const sendSlip = (person) =>{
+    console.log(person['#REF!_19']);
+    $mail.send({
+        from: 'tmaapp@noreply.com',
+        to:'rohimfikri@gmail.com',
+        subject: 'TEST SLIP',
+        text: 'This is an incredible test message',
+    }).then((result)=>{
+        console.log(result);
+    }).catch((reason)=>{
+        console.error(reason);
+    });
 }
 
 onMounted(() => {
     initTooltips();
-    selectedPeople = [];
-    selectedFile = {
+    selectedPeople.value = [];
+    selectedFile.value = {
         name : "-- no file selected --",
         path: null
     };
-    fileSelect = null;
+    fileSelect.value = null;
 })
 </script>
