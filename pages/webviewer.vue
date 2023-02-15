@@ -1,7 +1,7 @@
 <template>
     <div >
         <WebViewer :path="`http://localhost:3000/webviewer`"
-            url="https://pdftron.s3.amazonaws.com/downloads/pl/webviewer-demo.pdf" />
+            url="http://localhost:3000/api/payroll/generate" />
     </div>
 </template>
 

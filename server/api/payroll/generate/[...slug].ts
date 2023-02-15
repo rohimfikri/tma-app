@@ -4,12 +4,14 @@ import { $puppeteer } from '~~/server/utils/puppeteer'
 export default defineEventHandler(async (event) => {
     const config = useRuntimeConfig()
     // console.log(this)
-    // console.log(event)
+    // console.log(event.context.params.slug)
     // console.log($puppeteer())
     // const nuxtApp = useNuxtApp()
     // console.log(config)
     // let url = 'https://google.com'
-    let url = config.appUrl+"/slip"
+    let slug = event.context.params.slug.split("/")
+    console.log(slug)
+    let url = config.appUrl+"/slip/"+event.context.params.slug
     console.log(url)
     let papersize : PaperFormat = 'A4'
     let is_landscape : boolean = false
@@ -28,6 +30,7 @@ export default defineEventHandler(async (event) => {
     // })
     event.node.res.setHeader('Content-Type', 'application/pdf')
     event.node.res.setHeader('Content-Length', $pdf.length)
+    // event.node.res.setHeader('Content-Disposition', `attachment; filename="${slug[1]}.pdf"`)
     return event.node.res.end($pdf)
     // return 'sss';
 })
